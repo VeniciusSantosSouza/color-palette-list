@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Biblioteca de Paletas Cromáticas — Venicius Dos Santos Souza</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Fonts Inter & Fira Code -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .palette-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .palette-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+    }
+    .swatch-chip {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .swatch-item:hover .swatch-chip {
+      transform: scale(1.05);
+    }
+    #toast {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transform: translateY(100px);
+      opacity: 0;
+    }
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-teal-500 selection:text-white">
+
+  <!-- Header Hero -->
+  <header class="relative bg-gradient-to-br from-slate-950 via-slate-900 to-teal-950 text-white pt-12 pb-16 px-4 sm:px-6 lg:px-8 border-b border-slate-800 shadow-xl overflow-hidden">
+    <div class="absolute -top-24 -right-24 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto relative z-10">
+      
+      <!-- Badge de Autor -->
+      <div class="flex flex-wrap items-center gap-3 mb-6">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-400/20 text-teal-300 text-xs font-semibold tracking-wider uppercase backdrop-blur-md">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+          Criado por <span class="text-white font-bold ml-0.5">Venicius Dos Santos Souza</span>
+        </div>
+        <span class="text-xs text-slate-400">• Guia de Referência UI/UX (Ordem Alfabética A–Z)</span>
+      </div>
+      
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white mb-4 leading-tight">
+        Biblioteca de Paletas Cromáticas
+      </h1>
+      
+      <p class="max-w-3xl text-base sm:text-lg text-slate-300 leading-relaxed">
+        Coleção curada com <strong>100 combinações cromáticas organizadas em ordem alfabética (A–Z)</strong>. Cada paleta conta com sugestão prática de uso no design system. Clique em qualquer amostra para copiar o código HEX diretamente.
+      </p>
+
+      <!-- Contador de Paletas Visíveis -->
+      <div class="mt-8 inline-flex items-center gap-3 bg-slate-900/90 backdrop-blur border border-slate-800 px-4 py-2.5 rounded-xl text-sm text-slate-200 shadow-inner">
+        <span class="flex h-2.5 w-2.5 relative">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500"></span>
+        </span>
+        <span>Exibindo <strong id="visible-count" class="text-teal-400 font-bold">100</strong> de <strong class="text-white font-bold">100</strong> paletas disponíveis</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container Principal -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+<!-- Barra de Ferramentas / Filtros (Sticky) -->
+<section class="sticky top-4 z-20 mb-8 bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-slate-200/80 transition-all">
+  <div class="flex flex-col lg:flex-row gap-3 items-center justify-between">
+    
+    <!-- 1. Campo de Busca em Tempo Real -->
+    <div class="relative w-full lg:w-1/3">
+      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </div>
+      <input id="search-input" type="search" placeholder="Buscar por nome, HEX, papel ou palavra-chave..." aria-label="Buscar paleta" 
+        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition">
+    </div>
+
+    <!-- 2. Select de Categoria Principal -->
+    <div class="w-full lg:w-1/3">
+      <label for="category-select" class="sr-only">Filtrar por categoria</label>
+      <select id="category-select" aria-label="Filtrar por categoria"
+        class="w-full py-2.5 px-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition cursor-pointer">
+        <option value="">Todas as categorias</option>
+        <option value="Comercial">Comercial</option>
+        <option value="Corporativa">Corporativa</option>
+        <option value="Futurista">Futurista</option>
+        <option value="Interface">Interface</option>
+        <option value="Minimalista">Minimalista</option>
+        <option value="Natural">Natural</option>
+        <option value="Pastel">Pastel</option>
+        <option value="Saúde">Saúde</option>
+        <option value="Sofisticada">Sofisticada</option>
+        <option value="Vibrante">Vibrante</option>
+      </select>
+    </div>
+
+    <!-- 3. Select de Sugestão / Dicas de Uso + Botão Limpar -->
+    <div class="w-full lg:w-1/3 flex items-center gap-2">
+      <label for="usecase-select" class="sr-only">Filtrar por sugestão de uso</label>
+      <select id="usecase-select" aria-label="Filtrar por sugestão de uso"
+        class="w-full py-2.5 px-3.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition cursor-pointer">
+        <option value="">Todas as sugestões de uso</option>
+        <option value="App SaaS">App SaaS B2B &amp; CRM</option>
+        <option value="Banking">Banking &amp; Corretoras de Investimento</option>
+        <option value="Cafeterias">Cafeterias &amp; Livrarias Virtuais</option>
+        <option value="Cibersegurança">Cibersegurança &amp; Terminal DevOps</option>
+        <option value="Dashboard ESG">Dashboard ESG &amp; Sustentabilidade</option>
+        <option value="Delivery">Delivery &amp; Gastronomia</option>
+        <option value="E-commerce Artesanal">E-commerce Artesanal &amp; Orgânicos</option>
+        <option value="E-commerce de Luxo">E-commerce de Luxo &amp; Arquitetura</option>
+        <option value="Esports">Esports, Gaming &amp; Web3</option>
+        <option value="Joalheria">Joalheria &amp; Estética Premium</option>
+        <option value="Maternidade">Maternidade &amp; Cuidado Infantil</option>
+        <option value="Modo Noturno">Modo Noturno OLED &amp; Streaming</option>
+        <option value="Turismo Ecológico">Turismo Ecológico &amp; Hotel Fazenda</option>
+      </select>
+
+      <button id="clear-filters" title="Limpar filtros" class="inline-flex items-center justify-center p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition text-xs font-semibold whitespace-nowrap border border-slate-300">
+        Limpar
+      </button>
+    </div>
+
+  </div>
+</section>
+
+    <!-- Grid de Cards das Paletas -->
+    <div id="palette-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6" aria-label="Coleção de paletas">
+      <!-- 100 paletas renderizadas via JavaScript em ordem alfabética -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-16 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
+      <svg class="mx-auto h-12 w-12 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      <h3 class="text-base font-semibold text-slate-900">Nenhuma paleta encontrada</h3>
+      <p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Tente ajustar o termo pesquisado ou selecione outra categoria.</p>
+      <button id="reset-search-btn" class="mt-4 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition">
+        Redefinir Filtros
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="mt-12 border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 space-y-1">
+      <p class="font-semibold text-slate-700">Biblioteca de Paletas Cromáticas • Criado por Venicius Dos Santos Souza</p>
+      <p>100 Combinações Ordenadas Alfabeticamente (A–Z) para Interfaces Digitais (UI/UX)</p>
+    </div>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-700 text-sm font-medium pointer-events-none">
+    <div class="w-3.5 h-3.5 rounded-full border border-white/20" id="toast-color-dot"></div>
+    <span id="toast-message">Código HEX copiado!</span>
+  </div>
+
+  <!-- JavaScript com as 100 Paletas de A a Z -->
+  <script>
+    const RAW_PALETTES = [
+      { title: "Abisso abissal", category: "Azuis-marinho e tons sofisticados", useCase: "Relatórios Executivos & Telemetria", description: "Profundidade oceânica para produtos de alta fidelidade técnica e dashboards analíticos.", swatches: [{ hex: "#040D1A", role: "fundo escuro" }, { hex: "#0B1E36", role: "superfície" }, { hex: "#153359", role: "cor principal" }, { hex: "#27528C", role: "botão primário" }, { hex: "#7AA2D9", role: "destaque" }, { hex: "#EEF4FC", role: "fundo claro" }] },
+      { title: "Açaí e lavanda", category: "Roxos e violetas", useCase: "App de Meditação & Bem-Estar", description: "Contraste rico entre o tom escuro do açaí e o frescor relaxante da lavanda.", swatches: [{ hex: "#140812", role: "fundo açaí" }, { hex: "#2B1227", role: "superfície" }, { hex: "#581C4F", role: "cor secundária" }, { hex: "#9D4EDD", role: "botão primário" }, { hex: "#E0AFA0", role: "destaque suave" }, { hex: "#F7F0F5", role: "fundo claro" }] },
+      { title: "Alabastro e menta", category: "Interfaces claras", useCase: "Portais de Recursos Humanos & RH", description: "Luminosidade suave com toque de frescor corporativo para portais internos de colaboradores.", swatches: [{ hex: "#0D1F1D", role: "texto escuro" }, { hex: "#2D4A45", role: "texto secundário" }, { hex: "#739992", role: "linhas" }, { hex: "#CBE3DE", role: "fundo card" }, { hex: "#E8F5F2", role: "fundo elevado" }, { hex: "#F7FCFA", role: "fundo branco mint" }] },
+      { title: "Alto contraste acessível (AAA)", category: "Alto contraste", useCase: "Acessibilidade Pública & Governo", description: "Projetada rigorosamente com nível AAA da WCAG para máxima legibilidade e acessibilidade inclusiva.", swatches: [{ hex: "#000000", role: "fundo/texto preto" }, { hex: "#1A1A1A", role: "superfície escura" }, { hex: "#005A9C", role: "azul acessível 7:1" }, { hex: "#A60000", role: "alerta acessível" }, { hex: "#E6F0FA", role: "fundo claro acessível" }, { hex: "#FFFFFF", role: "fundo branco puro" }] },
+      { title: "Amanhecer na Montanha", category: "Tons terrosos", useCase: "Turismo Ecológico & Hotel Fazenda", description: "Cores inspiradas no nascer do sol sobre rochas e vegetação rasteira. Ótimo para turismo e agronegócio.", swatches: [{ hex: "#2B1F1D", role: "fundo escuro" }, { hex: "#4A3531", role: "superfície" }, { hex: "#8C523E", role: "cor principal" }, { hex: "#D97757", role: "ação/destaque" }, { hex: "#E6A15C", role: "realce suave" }, { hex: "#F7EFE9", role: "fundo claro" }] },
+      { title: "Amarelo de sinalização acessível", category: "Alto contraste", useCase: "Sistemas de Emergência & Terminais", description: "Preto puro com amarelo de alta visibilidade para sistemas de emergência e painéis operacionais.", swatches: [{ hex: "#000000", role: "fundo preto" }, { hex: "#1C1C1C", role: "superfície" }, { hex: "#FFD700", role: "sinalização amarela" }, { hex: "#FFEA00", role: "foco visual" }, { hex: "#333333", role: "borda de alto contraste" }, { hex: "#FFFFFF", role: "texto claro" }] },
+      { title: "Âmbar corporativo", category: "Tons quentes: laranja, âmbar e terracota", useCase: "Dashboards Financeiros & Indicadores", description: "Energia controlada com tons dourados. Perfeita para dashboards de gestão de risco.", swatches: [{ hex: "#281D0C", role: "fundo escuro" }, { hex: "#453216", role: "superfície" }, { hex: "#B45309", role: "principal" }, { hex: "#D97706", role: "ação/destaque" }, { hex: "#FCD34D", role: "indicador" }, { hex: "#FEF3C7", role: "fundo neutro" }] },
+      { title: "Ameixa e ameixa-preta", category: "Roxos e violetas", useCase: "Plataformas de Terapia Online", description: "Profundidade e maturidade para plataformas de saúde mental e bem-estar corporativo.", swatches: [{ hex: "#170B14", role: "fundo escuro" }, { hex: "#2E1628", role: "superfície" }, { hex: "#542348", role: "cor principal" }, { hex: "#853872", role: "botão primário" }, { hex: "#D9A0CB", role: "fundo de badge" }, { hex: "#FAF2F8", role: "fundo limpo" }] },
+      { title: "Apolo ametista", category: "Roxos e violetas", useCase: "EdTech & Cursos Online", description: "Tom violeta focado em ecossistemas digitais elegantes, edtechs e finanças modernas.", swatches: [{ hex: "#1E102F", role: "fundo escuro" }, { hex: "#341A52", role: "superfície elevada" }, { hex: "#6B21A8", role: "principal" }, { hex: "#A855F7", role: "ação vibrante" }, { hex: "#E9D5FF", role: "fundo de seleção" }, { hex: "#FAF5FF", role: "superfície clara" }] },
+      { title: "Areia do deserto", category: "Tons terrosos", useCase: "Arquitetura & Design de Interiores", description: "Paleta neutra morna para estúdios de arquitetura, decoração e blogs de sustentabilidade.", swatches: [{ hex: "#2B2118", role: "texto principal" }, { hex: "#423428", role: "superfície escura" }, { hex: "#785E4A", role: "cor de apoio" }, { hex: "#B0937A", role: "borda / divisor" }, { hex: "#E3D5CA", role: "superfície card" }, { hex: "#F5EBE6", role: "fundo claro" }] },
+      { title: "Argila e oliva", category: "Tons terrosos", useCase: "E-commerce de Produtos Orgânicos", description: "Natural, artesanal e madura. Uso em agricultura sustentável e e-commerce de produtos naturais.", swatches: [{ hex: "#342820", role: "fundo escuro" }, { hex: "#594333", role: "superfície" }, { hex: "#8C6045", role: "principal" }, { hex: "#B77B58", role: "destaque quente" }, { hex: "#C4B08A", role: "secundária" }, { hex: "#F3EBDD", role: "fundo suave" }] },
+      { title: "Asfalto e titânio", category: "Cinzas modernos", description: "Estética industrial contemporânea, focada em utilitários técnicos e sistemas operacionais.", useCase: "Software de Automação Industrial", swatches: [{ hex: "#121417", role: "fundo escuro" }, { hex: "#22262B", role: "superfície" }, { hex: "#3A4048", role: "divisor / borda" }, { hex: "#6E7783", role: "texto mutado" }, { hex: "#9CA5B0", role: "elemento secundário" }, { hex: "#F0F2F5", role: "fundo base claro" }] },
+      { title: "Atol do pacífico", category: "Cianos e tons oceânicos", useCase: "Plataformas Náuticas & Lazer", description: "Tons marinhos tropicais para marcas de preservação ambiental, vela e navegação.", swatches: [{ hex: "#06232A", role: "fundo escuro" }, { hex: "#0E3A45", role: "superfície" }, { hex: "#1B5E6F", role: "marca principal" }, { hex: "#2B8C9E", role: "ação de botão" }, { hex: "#83CFDC", role: "realce" }, { hex: "#EDF8FA", role: "fundo claro" }] },
+      { title: "Azul aço tecnológico", category: "Azuis profissionais", useCase: "Engenharia de Software & DevOps", description: "Projetada para ferramentas de engenharia, monitoramento de servidores e IoT.", swatches: [{ hex: "#0F172A", role: "fundo escuro" }, { hex: "#1E293B", role: "superfície" }, { hex: "#334155", role: "borda/contorno" }, { hex: "#0284C7", role: "cor de marca" }, { hex: "#38BDF8", role: "destaque" }, { hex: "#F0F9FF", role: "fundo claro" }] },
+      { title: "Azul cobalto preciso", category: "Azuis profissionais", useCase: "Painéis de Analytics & Operações", description: "Nítida e tecnológica, com ênfase controlada para dashboards de dados massivos.", swatches: [{ hex: "#111D3A", role: "fundo escuro" }, { hex: "#1E315B", role: "superfície" }, { hex: "#3157A4", role: "azul secundário" }, { hex: "#4C7FE8", role: "principal/ação" }, { hex: "#B7CCFF", role: "realce suave" }, { hex: "#F4F7FF", role: "fundo claro" }] },
+      { title: "Azul corporativo global", category: "Azuis profissionais", useCase: "ERP Empresarial & Gestão", description: "Equilíbrio neutro e universal para portais empresariais e sistemas ERP corporativos.", swatches: [{ hex: "#0B1D33", role: "fundo/texto" }, { hex: "#18385C", role: "superfície" }, { hex: "#1D4ED8", role: "ação principal" }, { hex: "#3B82F6", role: "interação/hover" }, { hex: "#BFDBFE", role: "fundo suave" }, { hex: "#EFF6FF", role: "superfície base" }] },
+      { title: "Azul de confiança", category: "Azuis profissionais", useCase: "Plataformas de B2B & CRM", description: "Profissional e direta, com azul de marca clássico para SaaS corporativo e finanças.", swatches: [{ hex: "#102A43", role: "texto/fundo escuro" }, { hex: "#243B53", role: "superfície escura" }, { hex: "#486581", role: "texto secundário" }, { hex: "#2672C8", role: "primária/ação" }, { hex: "#9CC5F3", role: "seleção e destaque" }, { hex: "#F0F6FC", role: "fundo claro" }] },
+      { title: "Azul leitor noturno AAA", category: "Alto contraste", useCase: "E-readers & Acessibilidade Noturna", description: "Azul marinho denso com texto branco de contraste máximo para leitura prolongada.", swatches: [{ hex: "#030F26", role: "fundo abissal" }, { hex: "#0B224D", role: "card ativo" }, { hex: "#1B4385", role: "linha de separação" }, { hex: "#0099FF", role: "foco em link" }, { hex: "#E1EEFF", role: "texto secundário" }, { hex: "#FFFFFF", role: "texto principal" }] },
+      { title: "Azul meia-noite militar", category: "Azuis-marinho e tons sofisticados", useCase: "Sistemas de Cibersegurança", description: "Recomendada para plataformas de inteligência de ameaças e auditoria de sistemas.", swatches: [{ hex: "#050C17", role: "fundo profundo" }, { hex: "#0E1A2B", role: "superfície" }, { hex: "#1A2E4A", role: "elemento de suporte" }, { hex: "#2D4C73", role: "ação discreta" }, { hex: "#809BBF", role: "destaque de dados" }, { hex: "#EAF0F8", role: "fundo base" }] },
+      { title: "Azul royal analítico", category: "Azuis profissionais", useCase: "Business Intelligence & Big Data", description: "Para dashboards estratégicos de tomada de decisão e gráficos interativos de alta densidade.", swatches: [{ hex: "#0B192C", role: "fundo escuro" }, { hex: "#1E3E62", role: "superfície elevada" }, { hex: "#0000FF", role: "cor de ação pura" }, { hex: "#4361EE", role: "destaque interativo" }, { hex: "#A5C0FF", role: "fundo suave" }, { hex: "#F5F8FF", role: "fundo claro" }] },
+      { title: "Brisa de algodão", category: "Paletas suaves e discretas", useCase: "App de Saúde & Telemedicina", description: "Paleta pastel relaxante com baixo estresse visual para saúde e acompanhamento médico.", swatches: [{ hex: "#1E293B", role: "texto escuro" }, { hex: "#64748B", role: "texto secundário" }, { hex: "#94A3B8", role: "borda suave" }, { hex: "#CBD5E1", role: "superfície neutra" }, { hex: "#E2E8F0", role: "fundo secundário" }, { hex: "#F8FAFC", role: "fundo principal" }] },
+      { title: "Bronze do pôr do sol", category: "Tons quentes: laranja, âmbar e terracota", useCase: "Gastronomia Gourmet & Bares", description: "Tom terroso avermelhado sofisticado para marcas de moda, vinícolas e restaurantes.", swatches: [{ hex: "#230F0A", role: "fundo escuro" }, { hex: "#3D1B12", role: "superfície" }, { hex: "#9A3412", role: "cor primária" }, { hex: "#C2410C", role: "ação" }, { hex: "#FDBA74", role: "destaque" }, { hex: "#FFF7ED", role: "fundo claro" }] },
+      { title: "Cacau puro", category: "Tons terrosos", useCase: "Clube de Assinatura de Cafés", description: "Aconchegante e madura para marketplaces agrícolas, chocolates finos e cafés especiais.", swatches: [{ hex: "#1A0F0B", role: "fundo escuro" }, { hex: "#331E17", role: "superfície" }, { hex: "#5C382C", role: "cor de marca" }, { hex: "#8A5645", role: "botão principal" }, { hex: "#D1A99B", role: "borda card" }, { hex: "#FAF5F3", role: "fundo cremoso" }] },
+      { title: "Coffee & Book", category: "Tons terrosos", useCase: "Livraria Virtual & Cafeterias", description: "Inspirada em grãos de café torrados, papel envelhecido e madeira escura. Perfeita para livrarias e cafés.", swatches: [{ hex: "#1C130E", role: "fundo escuro" }, { hex: "#36251B", role: "superfície" }, { hex: "#6E4732", role: "cor principal" }, { hex: "#A87353", role: "ação secundária" }, { hex: "#D9B89C", role: "destaque suave" }, { hex: "#F7F2EB", role: "fundo claro" }] },
+      { title: "Cyber Sec", category: "Alto contraste", useCase: "Cibersegurança & Terminal DevOps", description: "Verdes matriz em fundos pretos absolutos, lembrando terminais de linha de comando e segurança.", swatches: [{ hex: "#050A05", role: "fundo preto" }, { hex: "#0E1C0E", role: "superfície" }, { hex: "#1A381A", role: "borda/painel" }, { hex: "#00FF66", role: "neon ação" }, { hex: "#70FF9C", role: "texto matriz" }, { hex: "#F0FFF4", role: "fundo claro" }] },
+      { title: "Fintech Executiva", category: "Azuis profissionais", useCase: "Plataforma de Investimentos B2B", description: "Azuis marinho sóbrios com toques de prata metálica e verde esmeralda para segurança financeira.", swatches: [{ hex: "#0A1326", role: "fundo escuro" }, { hex: "#142240", role: "superfície" }, { hex: "#1D335A", role: "painel elevado" }, { hex: "#00C853", role: "ação/rendimento" }, { hex: "#7986CB", role: "azul secundário" }, { hex: "#F4F6FB", role: "fundo claro" }] },
+      { title: "Minimalismo Nórdico", category: "Neutros e minimalistas", useCase: "Móveis de Design & Arquitetura", description: "Linho, cinzas muito suaves e bege claro, transmitindo paz e legibilidade extrema.", swatches: [{ hex: "#1F2022", role: "texto principal" }, { hex: "#383A3D", role: "escuro secundário" }, { hex: "#72767A", role: "texto auxiliar" }, { hex: "#B1B5BA", role: "divisores" }, { hex: "#E2E4E7", role: "cartões suave" }, { hex: "#F9F9FA", role: "fundo limpo" }] },
+      { title: "Modo Noturno OLED", category: "Paletas escuras", useCase: "App Mobile Noturno & Dark Mode", description: "Pretos puros e cinzas carvão com detalhes em roxo neon e azul elétrico para economizar bateria OLED.", swatches: [{ hex: "#000000", role: "preto oled" }, { hex: "#121212", role: "superfície elevada" }, { hex: "#242424", role: "bordas" }, { hex: "#7C4DFF", role: "violeta ação" }, { hex: "#00E5FF", role: "ciano realce" }, { hex: "#FFFFFF", role: "texto contraste" }] },
+      { title: "Neon Cyberpunk", category: "Tech e Neons Cyber", useCase: "Plataformas de Esports & Web3", description: "Tons escuros profundos combinados com rosas e cianos vibrantes. Ideal para esports e games.", swatches: [{ hex: "#0A0612", role: "fundo espacial" }, { hex: "#190E2B", role: "superfície" }, { hex: "#3A1559", role: "elevado" }, { hex: "#FF007F", role: "rosa neon" }, { hex: "#00F0FF", role: "ciano neon" }, { hex: "#F3E5F5", role: "texto claro" }] },
+      { title: "Pastel Baby & Care", category: "Paletas suaves e discretas", useCase: "Maternidade & Cuidados Infantis", description: "Tons pastéis delicados de azul céu, verde menta claro e lavanda para cuidados com bebês e saúde.", swatches: [{ hex: "#2A3B4C", role: "texto principal" }, { hex: "#5C768D", role: "secundária" }, { hex: "#8EA8BF", role: "azul pastel" }, { hex: "#B2D8D8", role: "menta suave" }, { hex: "#FFD1DC", role: "rosa bebê" }, { hex: "#F8FBFD", role: "fundo neutro" }] },
+      { title: "Rose Gold & Luxury", category: "Rose Gold, Coral & Vinhos", useCase: "Cosméticos Premium & Joalherias", description: "Bordôs profundos, tons de ouro rosado e cinzas quentes. Ideal para marcas de luxo.", swatches: [{ hex: "#210D13", role: "escuro bordô" }, { hex: "#421B25", role: "superfície" }, { hex: "#7A3243", role: "vinho nobre" }, { hex: "#C98A72", role: "rose gold" }, { hex: "#E8B9AB", role: "destaque rosado" }, { hex: "#FDF8F6", role: "fundo claro" }] },
+      { title: "Sunset Tropical", category: "Tons quentes: laranja, âmbar e terracota", useCase: "Apps de Delivery & Gastronomia", description: "Laranjas queimados, amarelos solares e vermelhos rosados. Excelente para gastronomia e viagens.", swatches: [{ hex: "#2B0E18", role: "fundo escuro" }, { hex: "#571628", role: "superfície" }, { hex: "#9E2A2B", role: "vinho vermelho" }, { hex: "#FF5400", role: "laranja ação" }, { hex: "#FF9E00", role: "amarelo solar" }, { hex: "#FFF8F0", role: "fundo suave" }] },
+      
+      // Mais 68 paletas para perfazer 100 no total
+      { title: "Café torrado", category: "Tons terrosos", useCase: "Clube de Assinatura Gourmet", description: "Rica, profunda e acolhedora para marcas de produtos artesanais e artigos de couro.", swatches: [{ hex: "#1C100B", role: "fundo escuro" }, { hex: "#362117", role: "superfície" }, { hex: "#5C3A29", role: "cor de marca" }, { hex: "#8C583F", role: "botão/ação" }, { hex: "#D9B89C", role: "destaque" }, { hex: "#F7F2EE", role: "fundo cremoso" }] },
+      { title: "Cânion abeto", category: "Verdes naturais e profundos", useCase: "Sistemas Rurais & Agrotech", description: "Cenário alpino denso, trazendo estabilidade e equilíbrio visual para ferramentas rurais.", swatches: [{ hex: "#0B1D16", role: "fundo escuro" }, { hex: "#163328", role: "superfície" }, { hex: "#265241", role: "principal" }, { hex: "#437C65", role: "ação secundária" }, { hex: "#8FC2AC", role: "destaque" }, { hex: "#EBF5F0", role: "fundo limpo" }] },
+      { title: "Canvas de estúdio", category: "Interfaces claras", useCase: "Portfólios & Apps de Design", description: "Fundo neutro e quente perfeito para galerias de arte, fotógrafos e ferramentas visuais.", swatches: [{ hex: "#1C1917", role: "texto principal" }, { hex: "#44403C", role: "texto secundário" }, { hex: "#78716C", role: "desativados" }, { hex: "#D6D3D1", role: "bordas" }, { hex: "#F5F5F4", role: "superfície" }, { hex: "#FAFAFA", role: "fundo limpo" }] },
+      { title: "Carvão noturno", category: "Paletas escuras", useCase: "Dashboards Noturnos B2B", description: "Modo escuro balanceado com cinza levemente azulado para evitar fadiga ocular.", swatches: [{ hex: "#111827", role: "fundo aplicação" }, { hex: "#1F2937", role: "superfície card" }, { hex: "#374151", role: "hover/borda" }, { hex: "#6B7280", role: "texto mutado" }, { hex: "#6366F1", role: "botão primário" }, { hex: "#F9FAFB", role: "texto claro" }] },
+      { title: "Caxemira neutra", category: "Neutros e minimalistas", useCase: "E-commerce de Vestuário Premium", description: "Toque tátil e sofisticado para e-commerce de moda e decoração de interiores.", swatches: [{ hex: "#262220", role: "texto principal" }, { hex: "#453F3B", role: "superfície" }, { hex: "#7B726C", role: "detalhes" }, { hex: "#C4BCB5", role: "divisor" }, { hex: "#EBE5DF", role: "superfície clara" }, { hex: "#F9F6F2", role: "fundo base" }] },
+      { title: "Chumbo e tungstênio", category: "Cinzas modernos", useCase: "Software de Engenharia Mecânica", description: "Sensação de solidez para softwares industriais, automotivos e manutenções.", swatches: [{ hex: "#18181B", role: "fundo chumbo" }, { hex: "#27272A", role: "superfície" }, { hex: "#3F3F46", role: "borda técnica" }, { hex: "#71717A", role: "texto auxiliar" }, { hex: "#A1A1AA", role: "destaque" }, { hex: "#F4F4F5", role: "fundo neutro" }] },
+      { title: "Ciano de precisão", category: "Cianos e tons oceânicos", useCase: "Ferramentas IoT & DevTools", description: "Limpa, fria e informativa. Uso em ferramentas de desenvolvedores e monitoramento de IoT.", swatches: [{ hex: "#102B33", role: "fundo escuro" }, { hex: "#174753", role: "superfície" }, { hex: "#167D91", role: "ação secundária" }, { hex: "#39B7C8", role: "destaque/dados" }, { hex: "#A8E4E8", role: "fundo suave" }, { hex: "#F1FAFB", role: "superfície clara" }] },
+      { title: "Cinza ardósia técnico", category: "Cinzas modernos", useCase: "IDEs & Editores de Código", description: "Equilíbrio frio perfeito para editores de código, IDEs e painéis de servidores.", swatches: [{ hex: "#0F172A", role: "fundo escuro" }, { hex: "#1E293B", role: "superfície de código" }, { hex: "#334155", role: "linha ativa" }, { hex: "#64748B", role: "comentários" }, { hex: "#94A3B8", role: "destaque neutro" }, { hex: "#F8FAFC", role: "fundo claro" }] },
+      { title: "Concreto e alabastro", category: "Neutros e minimalistas", useCase: "Escritórios de Engenharia Civil", description: "Arquitetônica e sóbria para escritórios de engenharia, construção e projetos industriais.", swatches: [{ hex: "#18181A", role: "texto preto" }, { hex: "#333338", role: "superfície escura" }, { hex: "#666670", role: "elemento mutado" }, { hex: "#B8B8C2", role: "borda suave" }, { hex: "#E8E8ED", role: "fundo card" }, { hex: "#F7F7FA", role: "fundo claro" }] },
+      { title: "Coral atol", category: "Rose Gold, Coral & Vinhos", useCase: "Moda Praia & Bem-Estar", description: "Calor jovem e moderno para e-commerce de moda praiana e artigos de viagem.", swatches: [{ hex: "#291012", role: "fundo escuro" }, { hex: "#471D20", role: "superfície" }, { hex: "#E15B64", role: "ação coral" }, { hex: "#F47C83", role: "hover/destaque" }, { hex: "#FAD0D3", role: "fundo suave" }, { hex: "#FFF5F5", role: "fundo base" }] },
+      { title: "CRM de alta performance", category: "Produtos digitais contemporâneos", useCase: "Plataformas SaaS de Vendas", description: "Interface clara e profissional com azul elétrico e acento esmeralda para times de vendas.", swatches: [{ hex: "#0B132B", role: "texto escuro" }, { hex: "#1C2541", role: "superfície" }, { hex: "#3A506B", role: "borda suave" }, { hex: "#0066FF", role: "conversão/CTA" }, { hex: "#00E676", role: "meta/indicador" }, { hex: "#F4F7FC", role: "fundo claro" }] },
+      { title: "Cristal de gelo", category: "Interfaces claras", useCase: "Sistemas de Laboratório Médico", description: "Clareza azulada ultra limpa para relatórios de testes médicos e análises clínicas.", swatches: [{ hex: "#0A1B2A", role: "texto leitura" }, { hex: "#23415B", role: "subtítulos" }, { hex: "#547A9E", role: "bordas" }, { hex: "#B0CBE3", role: "fundo card" }, { hex: "#EBF3FA", role: "fundo elevado" }, { hex: "#F8FCFF", role: "fundo principal" }] },
+      { title: "Cyberpunk neon", category: "Tech e Neons Cyber", useCase: "Eventos Digitais & Streaming", description: "Alto impacto visual com neons ciano e rosa vibrante para streaming e e-sports.", swatches: [{ hex: "#080811", role: "fundo cyber" }, { hex: "#121124", role: "superfície" }, { hex: "#FF007F", role: "neon rosa" }, { hex: "#00F0FF", role: "neon ciano" }, { hex: "#7000FF", role: "cor secundária" }, { hex: "#F5F0FF", role: "texto claro" }] },
+      { title: "Ecossistema sustentável", category: "Produtos digitais contemporâneos", useCase: "Relatórios de Créditos de Carbono", description: "Paleta voltada a relatórios ESG (Ambiental, Social e Governança) e ecologia urbana.", swatches: [{ hex: "#061A14", role: "fundo escuro" }, { hex: "#0E3327", role: "superfície" }, { hex: "#1A5C47", role: "cor de marca" }, { hex: "#2EC4B6", role: "ação verde" }, { hex: "#CBF3F0", role: "badge ativo" }, { hex: "#F4FCFA", role: "fundo claro" }] },
+      { title: "Eclipse lunar", category: "Paletas escuras", useCase: "Apps de Observação Astronômica", description: "Preto absoluto com toques de alaranjado acobreado para aplicativos astronômicos.", swatches: [{ hex: "#050505", role: "fundo absoluto" }, { hex: "#141414", role: "superfície card" }, { hex: "#282828", role: "divisor" }, { hex: "#F97316", role: "foco eclipse" }, { hex: "#FDBA74", role: "destaque suave" }, { hex: "#F5F5F5", role: "texto principal" }] },
+      { title: "Escuro cibernético", category: "Paletas escuras", useCase: "Ferramentas de Análise Sci-Fi", description: "Estética cibernética moderna com tons escuros acinzentados e destaques ciano brilhantes.", swatches: [{ hex: "#0A0E17", role: "fundo escuro" }, { hex: "#131C2E", role: "superfície" }, { hex: "#1F293D", role: "superfície 2" }, { hex: "#00F2FE", role: "acento ciano" }, { hex: "#4FACFE", role: "acento secundário" }, { hex: "#E0F2FE", role: "texto claro" }] },
+      { title: "Esmeralda bancária", category: "Verdes corporativos", useCase: "Bancos Privados & Wealth Management", description: "Sofisticação financeira e crescimento. Ideal para relatórios de investimentos de alto padrão.", swatches: [{ hex: "#09241B", role: "fundo escuro" }, { hex: "#123D2F", role: "superfície" }, { hex: "#1F634D", role: "cor principal" }, { hex: "#3B9B7A", role: "ação/destaque" }, { hex: "#9EE0C8", role: "seleção" }, { hex: "#F0FAF6", role: "fundo neutro" }] },
+      { title: "Fintech de ativos digitais", category: "Produtos digitais contemporâneos", useCase: "Plataforma Crypto Trading", description: "Segurança de última geração com destaques violeta e verde esmeralda para trading.", swatches: [{ hex: "#0A0914", role: "fundo escuro" }, { hex: "#161426", role: "superfície elevada" }, { hex: "#7C3AED", role: "marca cripto" }, { hex: "#10B981", role: "alta/positivo" }, { hex: "#EF4444", role: "baixa/negativo" }, { hex: "#F8FAFC", role: "fundo app" }] },
+      { title: "Floresta corporativa", category: "Verdes corporativos", useCase: "Gestão de Pessoas & RH", description: "Equilíbrio entre tradicionalismo empresarial e inovação em plataformas de talentos.", swatches: [{ hex: "#0A221C", role: "fundo escuro" }, { hex: "#153B32", role: "superfície" }, { hex: "#225C4E", role: "cor primária" }, { hex: "#3D8C7A", role: "botão/ação" }, { hex: "#A3D9CC", role: "badge ativo" }, { hex: "#F2FAF8", role: "fundo aplicação" }] },
+      { title: "Folha de eucalipto", category: "Verdes naturais e profundos", useCase: "Acompanhamento de Hábitos", description: "Verde-acinzentado suave e relaxante. Indicado para cuidados corporais e bem-estar.", swatches: [{ hex: "#151F1C", role: "fundo escuro" }, { hex: "#23332E", role: "superfície" }, { hex: "#3A524A", role: "principal" }, { hex: "#5C7D72", role: "secundária/ação" }, { hex: "#A1C2B7", role: "destaque" }, { hex: "#EEF5F3", role: "fundo claro" }] },
+      { title: "Forde nórdico", category: "Cianos e tons oceânicos", useCase: "Monitoramento Hidrológico", description: "Serenidade e clareza para aplicativos de meteorologia e prevenção climática.", swatches: [{ hex: "#0F2027", role: "fundo escuro" }, { hex: "#203A43", role: "superfície" }, { hex: "#2C5364", role: "cor primária" }, { hex: "#4CA1AF", role: "destaque suave" }, { hex: "#A8DADC", role: "badge" }, { hex: "#F1FAFC", role: "fundo base" }] },
+      { title: "Glacial polar", category: "Cianos e tons oceânicos", useCase: "Sistemas de Refrigeração Industrial", description: "Tons ultra claros e cristalinos para interfaces médicas e sensores de temperatura.", swatches: [{ hex: "#0B2228", role: "fundo escuro" }, { hex: "#163B45", role: "superfície" }, { hex: "#06B6D4", role: "cor de ação" }, { hex: "#67E8F9", role: "destaque brilho" }, { hex: "#CFFAFE", role: "fundo seleção" }, { hex: "#ECFEFF", role: "fundo base" }] },
+      { title: "Grafite operacional", category: "Cinzas modernos", useCase: "Painéis de Observabilidade IT", description: "Neutra e técnica, com acento azul contido. Uso em sistemas de monitoramento B2B.", swatches: [{ hex: "#171B20", role: "fundo escuro" }, { hex: "#252B33", role: "superfície" }, { hex: "#3C4652", role: "superfície elevada" }, { hex: "#657383", role: "texto secundário" }, { hex: "#4C8DCE", role: "ação principal" }, { hex: "#E9EEF3", role: "fundo frio" }] },
+      { title: "Horizonte corporativo", category: "Azuis profissionais", useCase: "Consultoria Global de Negócios", description: "Inspiradora e profissional, adequada para consultorias empresariais e auditorias.", swatches: [{ hex: "#0C1E36", role: "fundo escuro" }, { hex: "#173459", role: "superfície" }, { hex: "#2B598C", role: "cor de marca" }, { hex: "#4A80B8", role: "ação secundária" }, { hex: "#A8CCF0", role: "destaque leve" }, { hex: "#F0F6FC", role: "fundo limpo" }] },
+      { title: "Íris cósmica", category: "Roxos e violetas", useCase: "Agentes de Inteligência Artificial", description: "Visual futurista focado em assistentes virtuais de IA e aplicativos de realidade aumentada.", swatches: [{ hex: "#0F0A1C", role: "fundo cósmico" }, { hex: "#1D1336", role: "superfície" }, { hex: "#3F2375", role: "marca secundária" }, { hex: "#7336E5", role: "ação interativa" }, { hex: "#BCA3F5", role: "destaque brilhante" }, { hex: "#F6F2FF", role: "fundo claro" }] },
+      { title: "Jade executivo", category: "Verdes corporativos", useCase: "Plataformas B2B de Projetos", description: "Verde jade contemporâneo, sem excesso de saturação para sistemas de gerenciamento.", swatches: [{ hex: "#123B3A", role: "fundo/texto escuro" }, { hex: "#17645B", role: "superfície / contorno" }, { hex: "#2B8A78", role: "cor principal" }, { hex: "#77B8A5", role: "secundária" }, { hex: "#D2EAE1", role: "fundo de ênfase" }, { hex: "#F5FAF7", role: "superfície clara" }] },
+      { title: "Laranja coral solar", category: "Tons quentes: laranja, âmbar e terracota", useCase: "Apps de Treino & Fitness", description: "Entusiasmo e otimismo para aplicativos de academias, hábitos saudáveis e esportes.", swatches: [{ hex: "#2B1107", role: "fundo escuro" }, { hex: "#4A1E0D", role: "superfície" }, { hex: "#F97316", role: "ação vibrante" }, { hex: "#FB923C", role: "hover/interação" }, { hex: "#FFEDD5", role: "fundo suave" }, { hex: "#FFF8F0", role: "fundo base" }] },
+      { title: "Laser violeta", category: "Tech e Neons Cyber", useCase: "Plataforma de Torneios Gamer", description: "Energia elétrica de alta voltagem para transmissões ao vivo e campeonatos de e-sports.", swatches: [{ hex: "#0B0518", role: "fundo escuro" }, { hex: "#190D33", role: "superfície card" }, { hex: "#6200EE", role: "laser violeta" }, { hex: "#00F5D4", role: "acento menta neon" }, { hex: "#7B2CBF", role: "brilho secundário" }, { hex: "#F7F0FF", role: "texto principal" }] },
+      { title: "Linho e tinta", category: "Neutros e minimalistas", useCase: "Ferramentas de Redação & Notas", description: "Minimalista, clara e acolhedora para editores de texto e blogs de leitura prolongada.", swatches: [{ hex: "#202A30", role: "texto principal" }, { hex: "#43515A", role: "superfície/texto" }, { hex: "#78868C", role: "texto auxiliar" }, { hex: "#B9C4C3", role: "divisor" }, { hex: "#E3E9E5", role: "superfície" }, { hex: "#F7F8F4", role: "fundo" }] },
+      { title: "Liquen da rocha", category: "Verdes naturais e profundos", useCase: "Pesquisas Geológicas & Clima", description: "Tom orgânico de liquen com nuances cinzas para relatórios de preservação florestal.", swatches: [{ hex: "#18211E", role: "fundo escuro" }, { hex: "#273631", role: "superfície" }, { hex: "#3E524B", role: "cor de marca" }, { hex: "#637D74", role: "elemento secundário" }, { hex: "#B3C7C0", role: "borda suave" }, { hex: "#F2F7F5", role: "fundo claro" }] },
+      { title: "Luminária de néon ambar", category: "Tech e Neons Cyber", useCase: "Apps Noturnos de Mídia", description: "Estética futurista noir inspirada em cidades orientais sob iluminação noturna.", swatches: [{ hex: "#0D0A08", role: "fundo noir" }, { hex: "#1F1814", role: "superfície" }, { hex: "#FF9100", role: "néon âmbar" }, { hex: "#FF3D00", role: "néon vermelho" }, { hex: "#3A2E26", role: "divisor de card" }, { hex: "#FFF3E0", role: "texto claro" }] },
+      { title: "Luz editorial", category: "Interfaces claras", useCase: "Revista Digital & Portais de Notícias", description: "Clássica e altamente legível, inspirada em publicações impressas e mídias jornalísticas.", swatches: [{ hex: "#0F172A", role: "texto títulos" }, { hex: "#334155", role: "texto corpo" }, { hex: "#64748B", role: "legendas" }, { hex: "#E2E8F0", role: "divisores" }, { hex: "#F1F5F9", role: "fundo de seção" }, { hex: "#FFFFFF", role: "fundo base" }] },
+      { title: "Marfim e carvão", category: "Neutros e minimalistas", useCase: "Sistemas de Documentação Acadêmica", description: "Editorial e atemporal, com calor discreto para wikis e bases de conhecimento.", swatches: [{ hex: "#242321", role: "texto principal" }, { hex: "#3D3B37", role: "superfície escura" }, { hex: "#716D66", role: "texto secundário" }, { hex: "#B9B3A8", role: "divisor" }, { hex: "#E5E0D6", role: "superfície" }, { hex: "#FAF8F2", role: "fundo claro" }] },
+      { title: "Marinho e platina", category: "Azuis-marinho e tons sofisticados", useCase: "Boutique de Alta Cordoaria", description: "Contraste elegante para e-commerce de luxo e consultorias executivas globais.", swatches: [{ hex: "#030A16", role: "preto marinho" }, { hex: "#0D1B2A", role: "superfície" }, { hex: "#1B263B", role: "card elevado" }, { hex: "#415A77", role: "detalhes" }, { hex: "#778DA9", role: "texto secundário" }, { hex: "#E0E1DD", role: "superfície clara" }] },
+      { title: "Marinho editorial", category: "Azuis-marinho e tons sofisticados", useCase: "Relatório de Gestão Patrimonial", description: "Discreta, profunda e refinada. Uso em plataformas financeiras com suporte a dark mode.", swatches: [{ hex: "#0B1628", role: "fundo escuro" }, { hex: "#14233B", role: "superfície principal" }, { hex: "#223B5A", role: "superfície elevada" }, { hex: "#55708F", role: "contorno/elemento" }, { hex: "#B7C6D8", role: "texto claro secundário" }, { hex: "#F2F5F8", role: "texto claro principal" }] },
+      { title: "Marinho governamental", category: "Azuis-marinho e tons sofisticados", useCase: "Portais de Utilidade Pública", description: "Autoridade e solidez. Recomendado para portais de transparência pública e advocacia.", swatches: [{ hex: "#0A192F", role: "fundo escuro" }, { hex: "#112240", role: "superfície" }, { hex: "#233554", role: "divisor/borda" }, { hex: "#48709C", role: "secundária" }, { hex: "#8892B0", role: "texto mutado" }, { hex: "#E6F1FF", role: "fundo claro" }] },
+      { title: "Matriz hacker", category: "Tech e Neons Cyber", useCase: "Analisa de Malware & Pentest", description: "Visual retrô futurista com verde neon intenso sobre preto puro para auditorias de segurança.", swatches: [{ hex: "#030A05", role: "preto matriz" }, { hex: "#0A1F0D", role: "superfície escura" }, { hex: "#00FF41", role: "verde neon de ação" }, { hex: "#008F11", role: "verde secundário" }, { hex: "#003B00", role: "borda/divisor" }, { hex: "#E6FFE8", role: "texto de leitura" }] },
+      { title: "Mel e açafrão", category: "Tons quentes: laranja, âmbar e terracota", useCase: "Padarias Artesanais & Doceria", description: "Calor dourado e reconfortante para panificadoras, cafés e produtos artesanais.", swatches: [{ hex: "#261906", role: "fundo escuro" }, { hex: "#422C0B", role: "superfície" }, { hex: "#85581A", role: "marca principal" }, { hex: "#D98E04", role: "botão primário" }, { hex: "#F5D078", role: "fundo de badge" }, { hex: "#FEFBF0", role: "fundo claro" }] },
+      { title: "Monocromático industrial", category: "Alto contraste", useCase: "Painéis Kiosk de Fábrica", description: "Estética rigorosa e sem distrações baseada em variações puras da escala de cinza.", swatches: [{ hex: "#09090B", role: "preto profundo" }, { hex: "#27272A", role: "cinza escuro" }, { hex: "#52525B", role: "cinza médio" }, { hex: "#A1A1AA", role: "cinza claro" }, { hex: "#E4E4E7", role: "superfície clara" }, { hex: "#FAFAFA", role: "fundo off-white" }] },
+      { title: "Musgo de montanha", category: "Verdes naturais e profundos", useCase: "Eco-resorts & Viagens Verdes", description: "Tons botânicos densos. Perfeito para ecoturismo, marcas de escalada e artigos ao ar livre.", swatches: [{ hex: "#0E1A14", role: "fundo escuro" }, { hex: "#182C23", role: "superfície" }, { hex: "#2A4739", role: "cor principal" }, { hex: "#426B56", role: "secundária" }, { hex: "#7DA68D", role: "destaque" }, { hex: "#E8F0EA", role: "fundo suave" }] },
+      { title: "Nebulosa profunda", category: "Paletas escuras", useCase: "Comunidade de Jogadores & Chat", description: "Sombra violeta escura com acentos magenta. Excelente para plataformas de games.", swatches: [{ hex: "#0D0B14", role: "fundo espaço" }, { hex: "#1A1626", role: "superfície elevada" }, { hex: "#2C243B", role: "card ativo" }, { hex: "#D946EF", role: "acento magenta" }, { hex: "#8B5CF6", role: "acento violeta" }, { hex: "#F3E8FF", role: "texto claro" }] },
+      { title: "Neo fintech", category: "Produtos digitais contemporâneos", useCase: "Banco Digital Juvenil", description: "Vibrante e confiável. Utilizada por bancos digitais de nova geração e conta internacional.", swatches: [{ hex: "#030712", role: "texto / fundo" }, { hex: "#111827", role: "superfície" }, { hex: "#4F46E5", role: "marca indigo" }, { hex: "#10B981", role: "rendimento positivo" }, { hex: "#6366F1", role: "destaque secundário" }, { hex: "#F9FAFB", role: "fundo claro app" }] },
+      { title: "Névoa pastel", category: "Paletas suaves e discretas", useCase: "Blogs de Estilo de Vida Calmo", description: "Mistura harmoniosa de lavanda e menta pastel para interfaces focadas em leitura suave.", swatches: [{ hex: "#292524", role: "texto escuro" }, { hex: "#78716C", role: "texto secundário" }, { hex: "#A8A29E", role: "contornos" }, { hex: "#E7E5E4", role: "superfície card" }, { hex: "#E0E7FF", role: "destaque pastel" }, { hex: "#F5F5F4", role: "fundo claro" }] },
+      { title: "Níquel e alumínio", category: "Cinzas modernos", useCase: "Rastreamento de Logística de Carga", description: "Tons metálicos prateados para fintechs de commodities e frotas de transporte.", swatches: [{ hex: "#14171A", role: "fundo escuro" }, { hex: "#282C30", role: "superfície" }, { hex: "#484E54", role: "elemento secundário" }, { hex: "#7A828A", role: "borda metálica" }, { hex: "#C2C7CC", role: "fundo do card" }, { hex: "#F2F4F5", role: "fundo claro" }] },
+      { title: "Noite safira", category: "Azuis-marinho e tons sofisticados", useCase: "Cofre Digital & Senhas", description: "Marinho com brilho azul-violeta. Uso em segurança de senhas e dados confidenciais.", swatches: [{ hex: "#101426", role: "fundo escuro" }, { hex: "#1B2340", role: "superfície" }, { hex: "#293967", role: "superfície elevada" }, { hex: "#526BC2", role: "principal/ação" }, { hex: "#AAB8F0", role: "destaque" }, { hex: "#F2F3FC", role: "texto/fundo claro" }] },
+      { title: "Nuvem de lavanda", category: "Paletas suaves e discretas", useCase: "Diário de Humor & Mapeamento de Sono", description: "Macia e pacífica para diários emocionais, rastreadores de sono e meditação diária.", swatches: [{ hex: "#1D1A24", role: "texto escuro" }, { hex: "#4B4459", role: "texto secundário" }, { hex: "#8A8199", role: "linha guia" }, { hex: "#C8C2D4", role: "fundo card" }, { hex: "#EBE8F2", role: "superfície suave" }, { hex: "#F8F7FA", role: "fundo claro" }] },
+      { title: "Nuvem de marfim", category: "Interfaces claras", useCase: "Plataformas de Escrita Minimalista", description: "Paleta branca radiante para editores de texto focados sem distrações visuais.", swatches: [{ hex: "#1A1A1A", role: "texto escuro" }, { hex: "#4A4A4A", role: "texto secundário" }, { hex: "#8C8C8C", role: "linha de margem" }, { hex: "#E0E0E0", role: "borda do editor" }, { hex: "#F5F5F2", role: "painel lateral" }, { hex: "#FFFFFF", role: "folha de escrita" }] },
+      { title: "Nuvem moderna", category: "Produtos digitais contemporâneos", useCase: "Armazenamento na Nuvem B2B", description: "Estética fluida baseada em gradientes azuis para serviços de hospedagem e backup.", swatches: [{ hex: "#0C1021", role: "fundo noturno" }, { hex: "#18203B", role: "superfície" }, { hex: "#0EA5E9", role: "ação primária" }, { hex: "#38BDF8", role: "interação/hover" }, { hex: "#BAE6FD", role: "fundo badge" }, { hex: "#F0F9FF", role: "fundo claro" }] },
+      { title: "Oceano atlântico", category: "Cianos e tons oceânicos", useCase: "Rastreamento Marítimo & Clima", description: "Fresca, técnica e aquática. Uso em logística de contêineres e telemetria de marés.", swatches: [{ hex: "#082F3A", role: "fundo escuro" }, { hex: "#0B4652", role: "superfície" }, { hex: "#087E8B", role: "principal" }, { hex: "#36A9B5", role: "secundária/dados" }, { hex: "#A6DDE0", role: "fundo de destaque" }, { hex: "#EFF9F8", role: "fundo claro" }] },
+      { title: "Papel de seda", category: "Neutros e minimalistas", useCase: "Ateliê de Costura & Moda Sob Medida", description: "Delicada e fluida para marcas de cosméticos, estúdios de arte e alta costura.", swatches: [{ hex: "#1A1919", role: "texto principal" }, { hex: "#3D3A3A", role: "superfície" }, { hex: "#857F7E", role: "elementos mutados" }, { hex: "#D6D1D0", role: "borda suave" }, { hex: "#F2EFEF", role: "fundo secundário" }, { hex: "#FAFAFA", role: "fundo base" }] },
+      { title: "Pedra sabão", category: "Cinzas modernos", useCase: "Painéis de Controle Industrial", description: "Cinza suave com nuance esverdeada imperceptível para dashboards confortáveis.", swatches: [{ hex: "#171A19", role: "fundo escuro" }, { hex: "#292E2C", role: "superfície" }, { hex: "#464F4B", role: "borda" }, { hex: "#73807A", role: "texto mutado" }, { hex: "#B5C2BC", role: "destaque" }, { hex: "#F0F4F2", role: "fundo claro" }] },
+      { title: "Pedra, musgo e barro", category: "Tons terrosos", useCase: "Feiras Agrícolas & Cooperativas", description: "Orgânica e equilibrada entre verde e terracota. Uso em feiras e gestão rural.", swatches: [{ hex: "#29312B", role: "texto/fundo escuro" }, { hex: "#465044", role: "superfície" }, { hex: "#77816A", role: "principal natural" }, { hex: "#A65F45", role: "destaque/ação" }, { hex: "#D3B99A", role: "superfície morna" }, { hex: "#F2E9DA", role: "fundo claro" }] },
+      { title: "Pêssego em pó", category: "Paletas suaves e discretas", useCase: "Papelaria Criativa & Presentes", description: "Tons acolhedores e doces para e-commerce infantil, papelarias e trabalhos manuais.", swatches: [{ hex: "#2D221E", role: "texto escuro" }, { hex: "#54433C", role: "superfície" }, { hex: "#A88C83", role: "detalhes" }, { hex: "#DECBC6", role: "borda suave" }, { hex: "#F5EBE8", role: "card pêssego" }, { hex: "#FAF5F3", role: "fundo suave" }] },
+      { title: "Pinhal mineral", category: "Verdes naturais e profundos", useCase: "Energia Solar & Eólica", description: "Verde frio com notas minerais e contraste moderado para monitoramento ambiental.", swatches: [{ hex: "#102923", role: "fundo escuro" }, { hex: "#1B3A32", role: "superfície" }, { hex: "#31594B", role: "principal" }, { hex: "#6F9B7B", role: "secundária/realce" }, { hex: "#B8D0B6", role: "destaque suave" }, { hex: "#F0F4E9", role: "texto/fundo claro" }] },
+      { title: "Plataforma No-Code", category: "Produtos digitais contemporâneos", useCase: "Construtores Visuais de Apps", description: "Visual dinâmico com toques roxos e rosa para ferramentas drag-and-drop.", swatches: [{ hex: "#12091F", role: "fundo escuro" }, { hex: "#23123D", role: "superfície" }, { hex: "#8B5CF6", role: "ferramentas ativas" }, { hex: "#EC4899", role: "destaque visual" }, { hex: "#F472B6", role: "conector visual" }, { hex: "#FAF5FF", role: "fundo canvas" }] },
+      { title: "Quantum fosforescente", category: "Tech e Neons Cyber", useCase: "Simuladores de Física Quântica", description: "Cores reluzentes e inspiradas em laboratórios de física avançada e aceleração.", swatches: [{ hex: "#040D14", role: "fundo escuro" }, { hex: "#0D1F2D", role: "superfície" }, { hex: "#00E5FF", role: "partícula ciano" }, { hex: "#76FF03", role: "partícula lima" }, { hex: "#1B4965", role: "linha conector" }, { hex: "#E8FAFF", role: "texto" }] },
+      { title: "Rose gold luxo", category: "Rose Gold, Coral & Vinhos", useCase: "Clínicas de Estética Avançada", description: "Elegância contemporânea e brilho sutil para marcas de tratamento estético de padrão elevado.", swatches: [{ hex: "#241419", role: "fundo escuro" }, { hex: "#3D222A", role: "superfície" }, { hex: "#8C4E60", role: "marca rosa escuro" }, { hex: "#C98A9C", role: "cor rose gold" }, { hex: "#E8C8D1", role: "borda suave" }, { hex: "#FAF2F4", role: "fundo delicado" }] },
+      { title: "Roxo orquídea digital", category: "Roxos e violetas", useCase: "Apps de Streaming Musical", description: "Vibrante e expressiva para aplicativos de rádio, podcasts e mídias sociais.", swatches: [{ hex: "#180924", role: "fundo escuro" }, { hex: "#2E1045", role: "superfície" }, { hex: "#7E22CE", role: "marca principal" }, { hex: "#C084FC", role: "destaque neon" }, { hex: "#F3E8FF", role: "fundo badge" }, { hex: "#FAF5FF", role: "fundo claro" }] },
+      { title: "Rubi imperial", category: "Rose Gold, Coral & Vinhos", useCase: "Clube VIP de Vinhos & Gastronomia", description: "Intensidade e paixão contida para marcas de artigos finos e degustações exclusivas.", swatches: [{ hex: "#1F080C", role: "fundo escuro" }, { hex: "#381017", role: "superfície" }, { hex: "#8B1E2F", role: "rubi principal" }, { hex: "#C42840", role: "ação interativa" }, { hex: "#EBA0AB", role: "fundo badge" }, { hex: "#FAF0F2", role: "fundo claro" }] },
+      { title: "SaaS dinâmico", category: "Produtos digitais contemporâneos", useCase: "Landing Pages de Alta Conversão", description: "Otimizada para conversão rápida em landing pages de produtos de software B2B.", swatches: [{ hex: "#0F172A", role: "texto principal" }, { hex: "#1E293B", role: "superfície escura" }, { hex: "#2563EB", role: "botão CTA principal" }, { hex: "#38BDF8", role: "destaque sky blue" }, { hex: "#E0F2FE", role: "fundo badge" }, { hex: "#F8FAFC", role: "fundo aplicação" }] },
+      { title: "Sálvia e areia", category: "Paletas suaves e discretas", useCase: "Cosméticos Orgânicos & Skincare", description: "Menta acinzentada e tons de areia. Muito procurada para blogs de produtos dermatológicos.", swatches: [{ hex: "#1C2421", role: "texto escuro" }, { hex: "#3B4743", role: "superfície" }, { hex: "#849690", role: "borda de apoio" }, { hex: "#BDC7C3", role: "fundo card" }, { hex: "#E1E8E5", role: "superfície clara" }, { hex: "#F7F9F8", role: "fundo limpo" }] },
+      { title: "Sienna mediterrânea", category: "Tons terrosos", useCase: "Restaurantes de Cozinha Típica", description: "Paleta calorosa inspirada na cerâmica artesanal e vinhedos rústicos.", swatches: [{ hex: "#2E150C", role: "fundo escuro" }, { hex: "#4D2619", role: "superfície" }, { hex: "#8C432B", role: "marca principal" }, { hex: "#BF6843", role: "ação de destaque" }, { hex: "#E6B098", role: "fundo suave" }, { hex: "#FCF5F2", role: "fundo claro" }] },
+      { title: "Sol de primavera", category: "Interfaces claras", useCase: "Aplicativo de Receitas e Nutrição", description: "Fundo claro e acolhedor com notas amareladas para aplicativos de culinária e dieta.", swatches: [{ hex: "#2B261F", role: "texto corpo" }, { hex: "#544B3E", role: "subtítulos" }, { hex: "#A89B85", role: "bordas" }, { hex: "#E6DDCF", role: "superfície" }, { hex: "#F7F2E9", role: "fundo de seção" }, { hex: "#FFFDF9", role: "fundo principal" }] },
+      { title: "Sombra de pergaminho", category: "Neutros e minimalistas", useCase: "E-readers & Bibliotecas Virtuais", description: "Conforto visual extremo para leitores de livros digitais e bibliotecas acadêmicas.", swatches: [{ hex: "#1C1B18", role: "texto escuro" }, { hex: "#383530", role: "superfície" }, { hex: "#6E685E", role: "texto secundário" }, { hex: "#C7C0B3", role: "linha de divisão" }, { hex: "#EFECE6", role: "card de leitura" }, { hex: "#F7F5F0", role: "fundo pergaminho" }] },
+      { title: "Start-up disruptiva", category: "Produtos digitais contemporâneos", useCase: "Aplicativos de Mobilidade Urbana", description: "Combinação ousada de azul violeta e acento lima para marcas que buscam alto destaque.", swatches: [{ hex: "#09090B", role: "fundo escuro" }, { hex: "#18181B", role: "superfície" }, { hex: "#6366F1", role: "marca primária" }, { hex: "#84CC16", role: "acento lima" }, { hex: "#E0E7FF", role: "fundo destaque" }, { hex: "#FAFAFA", role: "fundo claro" }] },
+      { title: "Synthwave retrô 80s", category: "Tech e Neons Cyber", useCase: "Rádio Online de Música Retrô", description: "Nostalgia digital com degradações de roxo, rosa neon e sol dourado de oitenta.", swatches: [{ hex: "#1A0933", role: "fundo noturno" }, { hex: "#2D1254", role: "superfície" }, { hex: "#FF2A85", role: "rosa neon principal" }, { hex: "#00E5FF", role: "ciano retrô" }, { hex: "#FFB800", role: "amarelo sol" }, { hex: "#FCE8FF", role: "texto claro" }] },
+      { title: "Tangerina energética", category: "Tons quentes: laranja, âmbar e terracota", useCase: "Serviços de Encomendas Rápidas", description: "Vibrante e ágil para entregas rápidas, serviços de courier e frotas urbanas.", swatches: [{ hex: "#240E04", role: "fundo escuro" }, { hex: "#451B08", role: "superfície" }, { hex: "#D94E06", role: "cor de marca" }, { hex: "#FF6B00", role: "ação primária" }, { hex: "#FFC299", role: "destaque" }, { hex: "#FFF5EF", role: "fundo claro" }] },
+      { title: "Terracota quente", category: "Tons quentes: laranja, âmbar e terracota", useCase: "Plataformas de Cursos Criativos", description: "Acolhedora, orgânica e dinâmica. Uso em cursos de artes, cerâmica e oficinas.", swatches: [{ hex: "#2C1810", role: "fundo escuro" }, { hex: "#4A281E", role: "superfície" }, { hex: "#C25E00", role: "cor de marca" }, { hex: "#EA580C", role: "botão primário" }, { hex: "#FDBA74", role: "alerta/destaque" }, { hex: "#FFF7ED", role: "fundo suave" }] },
+      { title: "Trevo de alta eficiência", category: "Verdes corporativos", useCase: "Indicadores de Produtividade KPI", description: "Indicado para painéis de metas de vendas, metas operacionais e comissões.", swatches: [{ hex: "#0D2B1E", role: "fundo escuro" }, { hex: "#1A4A35", role: "superfície" }, { hex: "#2D7354", role: "cor principal" }, { hex: "#4CA37C", role: "destaque" }, { hex: "#B2E3CC", role: "fundo seleção" }, { hex: "#F4FCF8", role: "fundo claro" }] },
+      { title: "Turquesa recife", category: "Cianos e tons oceânicos", useCase: "Agência de Mergulho & Esportes", description: "Vibrante e energizante. Perfeita para aplicativos de viagens marinhas e aventuras.", swatches: [{ hex: "#04292E", role: "fundo escuro" }, { hex: "#0A454C", role: "superfície" }, { hex: "#0D9488", role: "cor primária" }, { hex: "#14B8A6", role: "ação vanguarda" }, { hex: "#99F6E4", role: "destaque suave" }, { hex: "#F0FDFA", role: "fundo neutro" }] },
+      { title: "Verde chá matcha", category: "Paletas suaves e discretas", useCase: "Estúdio de Ioga & Pilates", description: "Frescor vegetal orgânico e calmo para marcas de Chá, Ioga e refeições leves.", swatches: [{ hex: "#1B241A", role: "texto escuro" }, { hex: "#394A38", role: "superfície" }, { hex: "#6B8568", role: "cor de marca" }, { hex: "#A8BF9E", role: "fundo card" }, { hex: "#E0EBDC", role: "superfície clara" }, { hex: "#F5F9F4", role: "fundo limpo" }] },
+      { title: "Verde institucional", category: "Verdes corporativos", useCase: "Companhias de Seguros e Saúde", description: "Confiável, estável e familiar para portais de previdência, seguros e planos familiares.", swatches: [{ hex: "#12352B", role: "texto escuro / fundo" }, { hex: "#1E4D3A", role: "superfície" }, { hex: "#2F7A50", role: "principal/ação" }, { hex: "#72A77B", role: "secundária e dados" }, { hex: "#D5E8D4", role: "fundo suave" }, { hex: "#F7FAF5", role: "superfície clara" }] },
+      { title: "Verde menta estratégico", category: "Verdes corporativos", useCase: "Gestão Ágil de Tarefas (Kanban)", description: "Claro, moderno e estimulante. Ótimo para boards de produtividade e projetos em equipe.", swatches: [{ hex: "#0F2620", role: "texto escuro" }, { hex: "#1D473D", role: "superfície elevada" }, { hex: "#10B981", role: "ação principal" }, { hex: "#34D399", role: "destaque positivo" }, { hex: "#A7F3D0", role: "fundo de badge" }, { hex: "#ECFDF5", role: "fundo aplicação" }] },
+      { title: "Verde profundo e natural", category: "Verdes naturais e profundos", useCase: "Dashboards ESG & Florestal", description: "Floresta sóbria, orgânica e contemplativa para fundos de conservação e bioeconomia.", swatches: [{ hex: "#051F20", role: "fundo escuro" }, { hex: "#0B2B26", role: "superfície elevada" }, { hex: "#163832", role: "cor principal" }, { hex: "#235347", role: "cor secundária" }, { hex: "#8EB69B", role: "destaque positivo" }, { hex: "#DAF1DE", role: "texto/fundo suave" }] },
+      { title: "Vinho bordeaux", category: "Rose Gold, Coral & Vinhos", useCase: "Clube Privado de Adegas", description: "Maduro, refinado e exclusivo. Indicado para importadoras de vinho e gastronomia fina.", swatches: [{ hex: "#1A0A0F", role: "fundo vinho escuro" }, { hex: "#33121D", role: "superfície" }, { hex: "#661C32", role: "cor de marca" }, { hex: "#992B4B", role: "botão primário" }, { hex: "#E6A1B4", role: "destaque" }, { hex: "#FAF0F3", role: "fundo suave" }] },
+      { title: "Violeta neblina", category: "Roxos e violetas", useCase: "Ferramentas Criativas de Design", description: "Mística e moderna com sofisticação criativa. Uso em softwares de edição e vetorização.", swatches: [{ hex: "#1A1528", role: "fundo escuro" }, { hex: "#2A213D", role: "superfície" }, { hex: "#523D75", role: "secundária" }, { hex: "#8B5CF6", role: "cor principal" }, { hex: "#C4B5FD", role: "destaque suave" }, { hex: "#F5F3FF", role: "fundo claro" }] },
+      { title: "Vortex do oceano", category: "Paletas escuras", useCase: "Plataformas de Pesquisa Marinha", description: "Dark mode aquático para monitores de submarinos, boias e sensores remotos.", swatches: [{ hex: "#03111A", role: "fundo abissal" }, { hex: "#0A2232", role: "superfície" }, { hex: "#13384D", role: "borda ativa" }, { hex: "#00B4D8", role: "botão ciano" }, { hex: "#90E0EF", role: "destaque" }, { hex: "#EDF9FC", role: "texto claro" }] }
+    ];
+
+    // Garantir exatamente 100 paletas completas ordenadas de A a Z
+    const PALETTES_DATA = RAW_PALETTES.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR')).slice(0, 100).map((item, index) => {
+      return {
+        ...item,
+        id: String(index + 1).padStart(3, '0')
+      };
+    });
+
+    const paletteGrid = document.getElementById('palette-grid');
+    const searchInput = document.getElementById('search-input');
+    const categorySelect = document.getElementById('category-select');
+    const visibleCount = document.getElementById('visible-count');
+    const emptyState = document.getElementById('empty-state');
+    const clearFiltersBtn = document.getElementById('clear-filters');
+    const resetSearchBtn = document.getElementById('reset-search-btn');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    const toastColorDot = document.getElementById('toast-color-dot');
+    const useCaseSelect = document.getElementById('usecase-select');
+
+    let toastTimeout;
+
+    function renderPalettes(palettes) {
+      paletteGrid.innerHTML = '';
+
+      if (palettes.length === 0) {
+        emptyState.classList.remove('hidden');
+        visibleCount.textContent = '0';
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      visibleCount.textContent = palettes.length;
+
+      palettes.forEach(palette => {
+        const card = document.createElement('article');
+        card.className = 'palette-card bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between';
+        
+        const swatchesHTML = palette.swatches.map(s => `
+          <li class="swatch-item group cursor-pointer" onclick="copyToClipboard('${s.hex}', '${s.role}')" title="Clique para copiar ${s.hex}">
+            <div class="swatch-chip h-12 sm:h-14 w-full rounded-xl border border-black/10 shadow-inner mb-2" style="background-color: ${s.hex};"></div>
+            <div class="px-0.5">
+              <span class="block font-mono font-bold text-xs text-slate-800 group-hover:text-teal-600 transition-colors">
+                ${s.hex}
+              </span>
+              <span class="block text-[11px] text-slate-500 leading-tight truncate mt-0.5" title="${s.role}">
+                ${s.role}
+              </span>
+            </div>
+          </li>
+        `).join('');
+
+        card.innerHTML = `
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <span class="font-mono text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">#${palette.id}</span>
+              <span class="text-[11px] font-semibold text-teal-700 bg-teal-50 border border-teal-100 rounded-full px-2.5 py-0.5 truncate max-w-[200px]">
+                ${palette.category}
+              </span>
+            </div>
+            
+            <h2 class="text-lg font-bold text-slate-900 mb-1 leading-snug">${palette.title}</h2>
+            
+            <div class="mb-3">
+              <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800 bg-sky-50 border border-sky-200/80 rounded-md px-2 py-0.5">
+                💡 ${palette.useCase}
+              </span>
+            </div>
+
+            <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5 min-h-[2.5rem]">${palette.description}</p>
+          </div>
+
+          <ul class="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-3 border-t border-slate-100">
+            ${swatchesHTML}
+          </ul>
+        `;
+
+        paletteGrid.appendChild(card);
+      });
+    }
+
+    function copyToClipboard(hex, role) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(hex).then(() => showToast(hex, role));
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = hex;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast(hex, role);
+      }
+    }
+
+    function showToast(hex, role) {
+      clearTimeout(toastTimeout);
+      toastColorDot.style.backgroundColor = hex;
+      toastMessage.innerHTML = `Copiado <strong>${hex}</strong> (${role})`;
+      toast.classList.add('show');
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+function normalizeText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+// Preenche os filtros com os valores realmente existentes nas paletas.
+function populateSelect(select, values, placeholder) {
+  const uniqueValues = [...new Set(values.filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  select.innerHTML = '';
+
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.textContent = placeholder;
+  select.appendChild(defaultOption);
+
+  uniqueValues.forEach(value => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+}
+
+function initializeFilters() {
+  populateSelect(
+    categorySelect,
+    PALETTES_DATA.map(palette => palette.category),
+    'Todas as categorias'
+  );
+
+  populateSelect(
+    useCaseSelect,
+    PALETTES_DATA.map(palette => palette.useCase),
+    'Todos os usos'
+  );
+}
+  
+  function filterPalettes() {
+    const searchTerm = normalizeText(searchInput.value);
+    const selectedCategory = categorySelect.value;
+    const selectedUseCase = useCaseSelect.value;
+
+    const filtered = PALETTES_DATA.filter(palette => {
+      const matchesCategory =
+        !selectedCategory ||
+        palette.category === selectedCategory;
+
+      const matchesUseCase =
+        !selectedUseCase ||
+        palette.useCase === selectedUseCase;
+
+      const searchableContent = [
+        palette.id,
+        palette.title,
+        palette.category,
+        palette.useCase,
+        palette.description,
+        ...palette.swatches.flatMap(swatch => [
+          swatch.hex,
+          swatch.role
+        ])
+      ];
+
+      const matchesSearch =
+        !searchTerm ||
+        searchableContent.some(value =>
+          normalizeText(value).includes(searchTerm)
+        );
+
+      return matchesCategory && matchesUseCase && matchesSearch;
+    });
+
+    renderPalettes(filtered);
+
+    const hasFilters =
+      searchInput.value.trim() !== '' ||
+      selectedCategory !== '' ||
+      selectedUseCase !== '';
+
+    clearFiltersBtn.classList.toggle('hidden', !hasFilters);
+  }
+
+  function resetFiltros() {
+    searchInput.value = '';
+    categorySelect.value = '';
+    useCaseSelect.value = '';
+
+    filterPalettes();
+  }
+
+  searchInput.addEventListener('input', filterPalettes);
+  categorySelect.addEventListener('change', filterPalettes);
+  useCaseSelect.addEventListener('change', filterPalettes);
+
+  clearFiltersBtn.addEventListener('click', resetFiltros);
+  resetSearchBtn.addEventListener('click', resetFiltros);
+
+  initializeFilters();
+  renderPalettes(PALETTES_DATA);
+    
+</script>
+</body>
+</html>
